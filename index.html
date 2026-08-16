@@ -257,7 +257,7 @@
 
   const SEG_COLORS = ["#3ddc84","#ff5d6c","#ffd23f","#5aa9ff","#ff8a3d","#3ad0c0","#ff7eb6","#b98cff"];
   const EMOJIS = ["🎡","🎯","📖","🍿","⭐","🙋","🏆","🎲","🎤","🧭","🔥","🎁"];
-  const ROW_H = 62, MAX_TILT = 90, STORE_KEY = "spin-picker-v1";
+  const ROW_H = 62, MAX_TILT = 90, MIN_SEGMENTS = 16, STORE_KEY = "spin-picker-v1";
 
   const DEFAULT_WHEELS = [
     { id: "w1", name: "Seminary — 1st Period", emoji: "📖", noRepeats: false, used: [],
@@ -271,7 +271,7 @@
 
   let wheels = load();
   let current = null, editingNew = false, draftEmoji = "🎡";
-  let celebrateCount = 0, rotDeg = 0, spinning = false, anglePer = 30, radius = 120;
+  let celebrateCount = 0, rotDeg = 0, spinning = false, anglePer = 30, radius = 120, display = [];
 
   const $ = (id) => document.getElementById(id);
   const screens = { menu: $("screen-menu"), wheel: $("screen-wheel"), edit: $("screen-edit") };
@@ -332,20 +332,26 @@
     cyl.innerHTML = "";
     $("wheel-hint").textContent = n === 0 ? "Add options with ✎ to spin"
       : (n === 1 ? "Add one more option to spin" : n + " on the wheel · tap Spin");
-    if (n === 0) return;
-    anglePer = 360 / n;
+    if (n === 0) { display = []; return; }
+    // Repeat short lists around the drum so it always looks full-sized
+    // (otherwise a tiny spinning strip sits between the tall gold sides).
+    const reps = Math.max(1, Math.ceil(MIN_SEGMENTS / n));
+    display = [];
+    for (let r = 0; r < reps; r++) for (let i = 0; i < n; i++) display.push(i);
+    const D = display.length;
+    anglePer = 360 / D;
     radius = (ROW_H / 2) / Math.tan((anglePer * Math.PI / 180) / 2);
     const fontSize = current.options.some(o => o.length > 10) ? 26 : 32;
-    current.options.forEach((opt, i) => {
+    display.forEach((realIdx, j) => {
       const el = document.createElement("div");
       el.className = "cyl-item";
       el.style.height = ROW_H + "px";
       el.style.marginTop = (-ROW_H / 2) + "px";
-      el.style.transform = `rotateX(${-i * anglePer}deg) translateZ(${radius}px)`;
-      el.style.background = SEG_COLORS[i % SEG_COLORS.length];
+      el.style.transform = `rotateX(${-j * anglePer}deg) translateZ(${radius}px)`;
+      el.style.background = SEG_COLORS[realIdx % SEG_COLORS.length];
       el.style.color = "#1a1030";
       el.style.fontSize = fontSize + "px";
-      el.innerHTML = `<span>${esc(opt)}</span>`;
+      el.innerHTML = `<span>${esc(current.options[realIdx])}</span>`;
       cyl.appendChild(el);
     });
     markUsed(); applyRotation();
@@ -353,10 +359,10 @@
 
   function markUsed() {
     const items = cyl.children;
-    for (let i = 0; i < items.length; i++) {
-      const spent = current.noRepeats && current.used.includes(i);
-      items[i].classList.toggle("used", spent);
-      items[i].style.opacity = spent ? "0.35" : "1";
+    for (let j = 0; j < items.length; j++) {
+      const spent = current.noRepeats && current.used.includes(display[j]);
+      items[j].classList.toggle("used", spent);
+      items[j].style.opacity = spent ? "0.35" : "1";
     }
   }
 
@@ -387,8 +393,12 @@
     if (current.noRepeats && pool.length === 0) { current.used = []; markUsed(); pool = remainingIdx(); toast("New round — everyone's back in!"); }
     spinning = true; $("btn-spin").disabled = true;
 
-    const win = pool[Math.floor(Math.random() * pool.length)];
-    const targetBase = win * anglePer;
+    const winReal = pool[Math.floor(Math.random() * pool.length)];
+    // Land on a random on-drum copy of the chosen option (short lists repeat).
+    const slots = [];
+    for (let j = 0; j < display.length; j++) if (display[j] === winReal) slots.push(j);
+    const winSlot = slots[Math.floor(Math.random() * slots.length)];
+    const targetBase = winSlot * anglePer;
     const cur = ((rotDeg % 360) + 360) % 360;
     const delta = ((targetBase - cur) % 360 + 360) % 360;
     const turns = 4 + Math.floor(Math.random() * 3);
@@ -404,8 +414,8 @@
       if (p < 1) requestAnimationFrame(frame);
       else {
         spinning = false; $("btn-spin").disabled = false; rotDeg = end % 360;
-        if (current.noRepeats) { current.used.push(win); save(); markUsed(); updateFooter(); }
-        reveal(current.options[win]);
+        if (current.noRepeats) { current.used.push(winReal); save(); markUsed(); updateFooter(); }
+        reveal(current.options[winReal]);
       }
     }
     requestAnimationFrame(frame);
