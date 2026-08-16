@@ -475,17 +475,19 @@
   function openEdit(isNew) {
     editingNew = isNew;
     if (isNew) {
-      current = normalize({ id: "w" + Math.floor(performance.now()) + Math.floor(Math.random()*1e6), name: "", emoji: draftEmoji, options: [] });
+      current = normalize({ id: "w" + Math.floor(performance.now()) + Math.floor(Math.random()*1e6), name: "", emoji: "🎡", options: [] });
       draftEmoji = "🎡";
-      $("edit-title").textContent = "New wheel"; $("edit-newfields").style.display = "block";
-      $("edit-name").value = ""; $("create-btn").style.display = "block"; $("btn-edit-done").style.display = "none";
-      $("delete-btn").style.display = "none"; renderEmojiPick();
+      $("edit-title").textContent = "New wheel";
+      $("edit-name").value = "";
+      $("create-btn").style.display = "block"; $("btn-edit-done").style.display = "none"; $("delete-btn").style.display = "none";
     } else {
-      $("edit-title").textContent = "Edit list"; $("edit-newfields").style.display = "none";
-      $("create-btn").style.display = "none"; $("btn-edit-done").style.display = "grid";
-      $("delete-btn").style.display = "block";
+      draftEmoji = current.emoji || "🎡";
+      $("edit-title").textContent = "Edit wheel";
+      $("edit-name").value = current.name;
+      $("create-btn").style.display = "none"; $("btn-edit-done").style.display = "grid"; $("delete-btn").style.display = "block";
     }
-    renderEditList(); show("edit");
+    $("edit-newfields").style.display = "block"; // name + icon editable for new AND existing wheels
+    renderEmojiPick(); renderEditList(); show("edit");
   }
   function renderEmojiPick() {
     const box = $("emoji-pick"); box.innerHTML = "";
@@ -511,7 +513,9 @@
     wheels.push(current); save(); renderMenu(); openWheel(current);
   }
   function finishEdit() {
-    // ensure `current` reflects into wheels (same object reference) & persist
+    // apply name/icon edits, then persist (same object reference lives in `wheels`)
+    current.name = $("edit-name").value.trim() || current.name || "Untitled wheel";
+    current.emoji = draftEmoji;
     if (!wheels.includes(current)) wheels.push(current);
     save(); renderMenu(); openWheel(current);
   }
