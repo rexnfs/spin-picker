@@ -43,7 +43,8 @@
     -webkit-tap-highlight-color: transparent;
   }
   .app {
-    width: 100%; max-width: 440px; min-height: 100dvh;
+    width: 100%; max-width: 440px;
+    height: 100vh; height: 100dvh; /* definite height so inner lists can scroll */
     display: flex; flex-direction: column; position: relative; overflow: hidden;
     background: radial-gradient(120% 40% at 50% 0%, #fff8e6 0%, transparent 60%), var(--bg);
     box-shadow: 0 0 0 1px var(--line);
@@ -58,9 +59,9 @@
   .iconbtn:active { transform: scale(.92); }
   .iconbtn.gold { background: var(--gold); color: #4a2f00; border-color: var(--gold-deep); font-weight: 800; }
 
-  .screen { flex: 1; display: none; flex-direction: column; }
+  .screen { flex: 1; min-height: 0; display: none; flex-direction: column; }
   .screen.active { display: flex; }
-  .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 6px 18px 28px; }
+  .scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 6px 18px 28px; }
   .eyebrow { text-transform: uppercase; letter-spacing: 2.5px; font-size: 11px; color: var(--gold-deep); font-weight: 800; margin: 12px 2px 14px; }
 
   .cardlist { display: flex; flex-direction: column; gap: 12px; }
